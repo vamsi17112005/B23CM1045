@@ -1,0 +1,289 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
+#include <sys/time.h>
+#include <string.h>
+
+#define MAX_NAME_LENGTH 50
+#define MATRIX_SIZE 5
+#define MAX_LIVES 3
+#define MIN_SCORE_LEVEL1 12
+#define LEVEL1_QUESTIONS 15
+#define LEVEL2_MIN_BLUE_DIAMONDS 3
+#define LEVEL2_REWARD_RED_DIAMONDS 1
+
+// Function to clear the screen
+void clearScreen() {
+    printf("\033[2J\033[H");
+}
+
+// Function to display a loading animation
+void displayLoadingAnimation(int duration) {
+    printf("Loading");
+    fflush(stdout);
+    for(int j=0;j<3;j++){
+    for (int i = 0; i < duration; i++) {
+        printf(".");
+        fflush(stdout);
+        usleep(1000000);
+    }
+    }
+    printf("\n");
+}
+
+// Function to calculate the elapsed time in microseconds
+long long calculateElapsedTime(struct timeval start, struct timeval end) {
+    return (end.tv_sec - start.tv_sec) * 1000000LL + (end.tv_usec - start.tv_usec);
+}
+
+int main() {
+    char playerName[MAX_NAME_LENGTH];
+    int blueDiamonds = 5;
+    int redDiamonds = 0;
+    int passLevel1 = 0;
+
+    clearScreen();
+    printf("Hello\n");
+    printf("WELCOME TO THE BRAINY GAME..\n");
+    printf("Enter your name: ");
+    scanf("%s", playerName);
+
+    clearScreen();
+    printf("Hi %s. Let me explain briefly about the game.\n", playerName);
+    printf("The game consists of two levels.\n");
+    printf("You'll be given %d blue diamonds to start with.\n", blueDiamonds);
+    printf("To access the second level, you must complete the first level and have at least %d blue diamonds.\n", LEVEL2_MIN_BLUE_DIAMONDS);
+
+    // Display loading animation
+    displayLoadingAnimation(3);
+
+restart:
+ while(redDiamonds>0){
+      printf("offer: By losing one red diamonds you can skip level 1 and proceed to leel 2\n");
+        printf("1. To play 1 st level\n");
+        printf("2. To play 2 nd level\n");
+        int c;
+        scanf("%d",&c);
+        if(c==2){
+            redDiamonds--;
+            goto Level2;
+        }
+        else 
+        break;
+    }
+   
+    clearScreen();
+    int remainingLives = MAX_LIVES;
+    int playerScore = 0;
+
+    printf("LEVEL 1 - Directions Game\n");
+    printf("Answer correctly within 3 seconds!\n");
+    printf("Controls:\n");
+    printf("3: Up\n2: Down\n1: Left\n4: Right\n");
+    printf("example--> direction: up\n");
+    printf("\tYour input:3\n");
+    printf("\tcorrect!\n\n");
+    printf("Press Enter to start...\n");
+    getchar(); // Consume newline
+    getchar(); // Wait for Enter
+    clearScreen();
+    srand(time(NULL));
+    for (int i = 0; i < LEVEL1_QUESTIONS; i++) {
+        int random_number = rand() % 4 + 1;
+        printf("Direction: ");
+        switch (random_number) {
+            case 3:
+                printf("Up\n");
+                break;
+            case 2:
+                printf("Down\n");
+                break;
+            case 1:
+                printf("Left\n");
+                break;
+            case 4:
+                printf("Right\n");
+                break;
+        }
+
+        // Record start time
+        struct timeval startTime, endTime;
+        gettimeofday(&startTime, NULL);
+
+        int playerInput;
+        printf("Your input: ");
+        scanf("%d", &playerInput);
+
+        // Record end time
+        gettimeofday(&endTime, NULL);
+        long long elapsedTime = calculateElapsedTime(startTime, endTime);
+
+        if (elapsedTime <= 3000000) { // Within 3 seconds
+            if (playerInput == random_number) {
+                printf("Correct!\n");
+                playerScore++;
+            } else {
+                printf("Wrong!\n");
+                remainingLives--;
+                if (remainingLives == 0) {
+                    printf("Out of lives. Game Over.\n");
+                    blueDiamonds--;
+                    break;
+                }
+            }
+        } else {
+            printf("Time's up! You took too long.\n");
+            remainingLives--;
+            if (remainingLives == 0) {
+                printf("Out of lives. Game Over.\n");
+                blueDiamonds--;
+                break;
+            }
+        }
+    }
+
+    if (playerScore >= MIN_SCORE_LEVEL1) {
+        printf("Congratulations! You passed Level 1.\n");
+        blueDiamonds += 2; // Reward: 2 blue diamonds
+        passLevel1 = 1;
+    } else {
+        printf("You didn't pass Level 1.\n");
+        blueDiamonds--; // Penalty: Lose one blue diamond
+    }
+
+    // Offer to play Level 2
+    if (blueDiamonds >= LEVEL2_MIN_BLUE_DIAMONDS && passLevel1) {
+        printf("You have %d blue diamonds. Would you like to play Level 2?\n", blueDiamonds);
+        printf("1. Yes\n2. No\n");
+        int choice;
+        scanf("%d", &choice);
+        if (choice == 1) {
+            clearScreen();
+        level2:
+            printf("LEVEL 2 - Memory Game\n");
+            // Proceed to Level 2
+               printf("In the memory game, players must recall and input the positions of 'ones' observed in a matrix to score points,     testing memory and attention.\n");
+           int n; // Size of the matrix
+         
+    printf("Enter the size of the play zone(size of N X N matrix)\n");
+    printf("In this level, if the size is selected as 3 or 4, you will receive 2 blue diamonds and 1 red diamond as your reward after completing the level\n");
+      printf("In this level, if the size is selected as 5, you will receive 5 blue diamonds and 2 red diamonds as your reward after completing the level\n");
+        printf("In this level, if the size is selected as 6, you will receive  3 red diamonds as your reward after completing the level\n");
+    scanf("select the size:%d", &n);
+    
+    Level2:
+    int  matrix[n][n]; // Declare a 2D array
+    int ones_in_row[n]; // Array to store the count of ones in each row
+
+    // Seed the random number generator with the current time
+    srand(time(NULL));
+
+    // Initialize the count of ones in each row to zero
+    for (int i = 0; i < n; i++) {
+        ones_in_row[i] = 0;
+    }
+    // Fill the matrix with random numbers (0 or 1)
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            // Check if we have already placed two ones in this row
+            if (ones_in_row[i] < 2) {
+                // Generate "-" or "1"
+                matrix[i][j] = (rand() % 2 == 0) ? 0 : 1;
+                // Update the count of ones in this row if the generated character is '1'
+                if (matrix[i][j] == 1) {
+                    ones_in_row[i]++;
+                }
+            } else {
+                // If two ones have already been placed, fill the remaining cells with "-"
+                matrix[i][j] = 0;
+            }
+        }
+    }
+    
+    // Display the contents of the matrix
+    printf("see the memory matrix\n");
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            printf("%d ", matrix[i][j]);
+        }
+        printf("\n");
+    }
+    
+    int arr[n][n];
+    int m=1;
+     for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+        
+        arr[i][j]=m;
+        m++;
+        }
+     }
+    float ones=0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+      if(matrix[i][j]==1){
+          ones++;
+          matrix[i][j]=arr[i][j];
+      }
+        }
+    }
+    
+    printf("will be scrolled after 5 sec.\n");
+    usleep(5000000);
+     clearScreen();
+    int a;
+    int score=0;
+    for(int m=0;m<ones;m++){
+    scanf("%d",&a);    
+    
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+        
+        if(matrix[i][j]==a){
+            score++;
+        }
+    }
+}
+}
+printf("%d\n",score);
+float percentage=(score/ones)*100;
+printf("%.2f\n",percentage);
+if(percentage<75){
+    blueDiamonds--;
+    printf("Unfortunately, you didn't succeed in the 2nd level. you lost 1 blue diamond.\n");
+}
+if(percentage>75&&percentage<90){
+    blueDiamonds++;
+     printf("Stay determined! The title of 'Brain Master' awaits you on your next endeavor.\n");
+}
+   if(percentage>90){
+       printf("%s,You have bestowed the title of 'Brain Master'\n",playerName);
+       if(n==3||n==4){
+       blueDiamonds=blueDiamonds+2;
+       redDiamonds++;
+       }
+       if(n==5){
+            blueDiamonds=blueDiamonds+5;
+       redDiamonds=redDiamonds+2;
+       }
+       if(n==6){
+           
+       redDiamonds=redDiamonds+3;
+       }
+   }
+   }
+    }
+
+    // Display current diamonds count and options
+    printf("You have %d blue diamonds and %d red diamonds.\n", blueDiamonds, redDiamonds);
+    printf("Options:\n");
+    printf("1. Restart\n2. Quit\n");
+    int option;
+    scanf("%d", &option);
+    if (option == 1) {
+        goto restart;
+    }
+
+    return 0;
+}
